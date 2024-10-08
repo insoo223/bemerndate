@@ -1,5 +1,6 @@
 import express from 'express';
 import {mongoose as mgs} from 'mongoose';
+import cors from 'cors';
 import connectDB from './db.js';
 import Cards from './dbCards.js';
 
@@ -20,6 +21,8 @@ process.on("unhandledRejection", err => {
   app.close(() => process.exit(1))
 })
 
+app.use(express.json());
+app.use(cors());
 
 //---- Setup API endpoints
 
@@ -28,21 +31,15 @@ app.get('/', (rq, rs) => rs.status(200).send('Hello Insoo!'));
 app.post('/dating/cards', (rq, rs) => {
 	const dbCard = rq.body;
 
-	Cards.create(dbCard, (err, data) => {
-		if (err)
-			rs.status(500).send(err);
-		else
-			rs.status(200).send(data);
-	}); // Cards.create 
+	Cards.create(dbCard)
+		.then((data) => rs.status(201).send(data))
+		.catch((err) => rs.status(500).send(data));
 }); //app.post ('/dating/cards'...)
 
 app.get('/dating/cards', (rq, rs) => {
-	Cards.find ((err, data) => {
-		if (err)
-			rs.status(500).send(err);
-		else
-			rs.status(200).send(data);
-	}); // Cards.find 
+	Cards.find ()
+		.then((data) => rs.status(200).send(data))
+		.catch((err) => rs.status(500).send(data));
 }); //app.get ('/dating/cards'...)
  
 app.listen(port, () => console.log(`Linstening on ${port} ...`));
