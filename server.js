@@ -1,11 +1,40 @@
 import express from 'express';
-import {mongoose as mgs} from 'mongoose';
 import cors from 'cors';
 import connectDB from './db.js';
 import Cards from './dbCards.js';
 
+import { Server } from 'socket.io';
+import {
+    getDocument,
+    updateDocument
+} from './docCtrl.js'
+
 const app = express();
 const port = process.env.PORT || 8001;
+
+const io = new Server(9000, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+io.on('connection', socket => {
+    socket.on('get-document', async documentId => {
+        const document = await getDocument(documentId);
+        socket.join(documentId);
+        socket.emit('load-document', document.data);
+
+        socket.on('send-changes', delta => {
+            socket.broadcast.to(documentId).emit(
+                'receive-changes', delta);
+        })
+
+        socket.on('save-document', async data => {
+            await updateDocument(documentId, data);
+        })
+    })
+});
 
 //---- Setup Middlewares
 
@@ -43,4 +72,5 @@ app.get('/dating/cards', (rq, rs) => {
 }); //app.get ('/dating/cards'...)
  
 app.listen(port, () => console.log(`Linstening on ${port} ...`));
+// app.listen(9000, () => console.log(`Linstening on 9000 ...`));
 
